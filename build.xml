@@ -1,0 +1,255 @@
+<project name="opencranium" basedir="." default="main">
+
+	<!-- main targets -->
+	
+	<target name="main" depends="clean,compile,doc,jar,backup" />
+	
+	<target name="main-extended" depends="main,optimizedjar,analyzeReport,codeAnalyzeReport,findbugs,test" />
+
+	<!-- time stamp variable -->
+	
+	<tstamp>
+		<format property="timeStamp" pattern="yyyyMMddHHmm" locale="en" timezone="GMT"/>
+		<format property="dayTimeStamp" pattern="yyyyMMdd" locale="en" timezone="GMT"/>
+		<format property="date" pattern="dd/MM/yyyy HH:mm (Z)" locale="en" timezone="GMT"/>
+	</tstamp>
+	
+	<!-- versioning (see Roadmap file in order to set correctly the version) -->
+	
+	<property name="versionNumber" value="0.1a" />
+
+	<property name="version" value="${versionNumber}.${timeStamp}" />
+	
+	<property name="authors" value="Raul Arrabales and Jorge Muñoz" />
+
+	<property name="license" value="All rights reserved by the authors. See License file." />
+
+	<!-- directory and file properties -->
+	
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="tmp" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="jar.dir" value="jar" />
+	<property name="doc.dir" value="doc/javadoc" />
+	<property name="uml.dir" value="doc/uml/argouml" />
+	<property name="test.dir" value="test" />
+	<property name="junit.test.dir" value="${build.dir}/test/classes" />
+	<property name="backup.dir" value="backup" />
+	<property name="jar.file" value="${jar.dir}/${ant.project.name}.jar" />
+	<property name="optimized.jar.file" value="${jar.dir}/${ant.project.name}-optimized.jar" />
+	<property name="license.file" value="License" />
+	
+	<property name="release.dir" value="release/${versionNumber}" />
+	<property name="release.jar" value="${release.dir}/${ant.project.name}-${versionNumber}.jar" />
+	<property name="release.doc.zip" value="${release.dir}/${ant.project.name}-${versionNumber}-doc.zip" />
+	<property name="release.source.zip" value="${release.dir}/${ant.project.name}-${versionNumber}-source.zip" />
+	
+	<!--  third party tools -->
+	
+	<property name="tools.dir" value="3PartyTools/lib" />
+	<property name="proguard.jar" value="${tools.dir}/proguard.jar" />
+	<property name="lint.jar" value="${tools.dir}/lint4j.jar" />
+	<property name="lint.level" value="5" />
+	<property name="junit.jar" value="${tools.dir}/junit.jar" />
+	<property name="findbugs.jar" value="${tools.dir}/findbugs-ant.jar" />
+	<property name="findbugs.home" value="3PartyTools/findbugs-1-3.9.zip" />
+
+	<!-- task definitions -->
+	
+	<taskdef name="lint4j" classname="com.jutils.lint4j.ant.Lint4jAntTask" classpath="${lint.jar}"/>
+
+	<taskdef resource="proguard/ant/task.properties" classpath="${proguard.jar}" />
+	
+	<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpath="${findbugs.jar}"/>
+	
+	<!-- common targets -->
+	
+	<!-- clean dirs -->
+	
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete dir="${doc.dir}" />
+		<mkdir dir="${doc.dir}" />
+		<mkdir dir="${backup.dir}" />
+		<mkdir dir="${build.dir}" />
+	</target>
+	
+	<!-- compile -->
+
+	<target name="compile">
+		<mkdir dir="${classes.dir}" />
+		<javac debug="false" optimize="true" srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false" />
+	
+
+		<javac debug="false" optimize="true" srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false">
+	    <compilerarg value="-Xlint"/>
+		</javac>
+	</target>
+	
+	<!-- jar -->
+
+	<target name="jar" depends="compile">
+		<mkdir dir="${jar.dir}" />
+		<mkdir dir="${classes.dir}/META-INF" />
+		<copy todir="${classes.dir}/META-INF" file="${license.file}"/>
+		<jar destfile="${jar.file}" basedir="${classes.dir}">
+			<manifest>
+				<attribute name="Version" value="${version}" />
+				<attribute name="Authors" value="${authors}" />
+				<attribute name="Date" value="${date}" />
+				<attribute name="License" value="${license}" />
+			</manifest>
+		</jar>
+	</target>
+	
+	<!-- API javadoc -->
+
+	<target name="doc">
+		<mkdir dir="${doc.dir}" />
+		<javadoc destdir="${doc.dir}">
+			<fileset dir="${src.dir}"/>
+		</javadoc>
+	</target>
+	
+	<!-- backup -->
+
+	<target name="backup">
+		<zip destfile="${backup.dir}/opencranium-backup-${versionNumber}.${dayTimeStamp}.zip">
+			<fileset dir="." includes="${src.dir}/**/*.java" />
+			<fileset dir="." includes="${test.dir}/**/*.java" />
+			<fileset dir="." includes="build.xml" /> 
+			<fileset dir="." includes="License" />
+			<fileset dir="." includes="Roadmap" />
+			<fileset dir="." includes="ceracranium.properties" />
+		</zip>
+		<copy file="${uml.dir}/opencranium.uml.zargo" tofile="${backup.dir}/opencranium.uml.${dayTimeStamp}.zargo" overwrite="true" />
+	</target>
+	
+	<!-- tests -->
+	
+	<target name="compiletest">
+		<mkdir dir="${junit.test.dir}" />
+		<javac debug="false" optimize="true" srcdir="${test.dir}" destdir="${junit.test.dir}" includes="**/*.java" includeantruntime="false">
+			<classpath>
+				<pathelement location="${junit.jar}" />
+				<pathelement location="${optimized.jar.file}"/>
+			</classpath>
+		</javac>
+	</target>
+	
+	<target name="test" depends="compiletest,optimizedjar">
+		<path id="testpath">
+			<pathelement location="${junit.jar}" />
+			<pathelement location="${optimized.jar.file}"/>
+			<pathelement location="${junit.test.dir}"/>
+		</path>
+		<!-- this shows all tests -->
+		<junit printsummary="yes">
+			<classpath>
+				<path refid="testpath"/>
+			</classpath>
+			<batchtest>
+				<fileset dir="${junit.test.dir}">
+					<include name="**/*Test.class"/>
+				</fileset>
+			</batchtest>
+		</junit>
+		<!-- this is to show only errors -->
+		<junit>
+			<classpath>
+				<path refid="testpath"/>
+			</classpath>
+			<batchtest>
+				<fileset dir="${junit.test.dir}">
+					<include name="**/*Test.class"/>
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+	
+	<!-- third party tools tasks -->
+	
+	<!-- lint4j report -->
+
+	<target name="analyzeReport" depends="jar">
+		<lint4j packages="opencranium.*" sourcepath="${src.dir}" level="${lint.level}">
+    		<formatters>
+				<formatter type="text" />
+				<formatter type="text" toFile="tmp/lintCodeReport.txt"/>
+				<formatter type="xml" toFile="tmp/lintCodeReport.xml"/>
+			</formatters>
+		</lint4j>
+	</target>
+	
+	<!-- jlint report -->
+
+	<target name="codeAnalyzeReport" depends="jar">
+		<exec executable="${tools.dir}/jlint.sh">
+			<arg value="${basedir}/${classes.dir}"/>
+			<arg value="${basedir}/${src.dir}"/>
+			<arg value="${basedir}/${build.dir}/jlintCodeReport.txt"/>
+			<arg value="${basedir}/${tools.dir}"/>
+		</exec>
+			
+	</target>
+	
+	<!-- find bugs report -->
+	
+	<target name="findbugs" depends="compile">
+		<findbugs home="${tools.dir}" output="text" outputFile="tmp/findbugsReport.txt" >
+			<sourcePath path="${src.dir}/opencranium" />
+			<class location="${classes.dir}/opencranium" />
+		</findbugs>
+	</target>
+	
+	<!-- proguard jar ofuscator/optimizer -->
+
+	<target name="optimizedjar" depends="jar">
+		<proguard>
+		-injars       ${jar.file}
+		-outjars      ${optimized.jar.file}
+		-libraryjars  ${java.home}/lib/rt.jar
+		-printmapping tmp/out.map
+
+		-keepparameternames
+		-renamesourcefileattribute SourceFile
+		-keepattributes Exceptions,InnerClasses,Signature,Deprecated,
+		                SourceFile,LineNumberTable,*Annotation*,EnclosingMethod
+
+		-keep public class * {
+		    public protected *;
+		}
+
+		-keepclassmembernames class * {
+		    java.lang.Class class$(java.lang.String);
+		    java.lang.Class class$(java.lang.String, boolean);
+		}
+
+		-keepclassmembers enum * {
+		    public static **[] values();
+		    public static ** valueOf(java.lang.String);
+		}
+
+		-keepclassmembers class * implements java.io.Serializable {
+		    static final long serialVersionUID;
+		    private static final java.io.ObjectStreamField[] serialPersistentFields;
+		    private void writeObject(java.io.ObjectOutputStream);
+		    private void readObject(java.io.ObjectInputStream);
+		    java.lang.Object writeReplace();
+		    java.lang.Object readResolve();
+		}
+		</proguard>
+	</target>
+	
+	<!-- release target -->
+	
+	<target name="release" depends="clean,compile,doc,jar,backup,optimizedjar">
+		<copy file="${backup.dir}/opencranium.uml.${dayTimeStamp}.zargo" tofile="${release.dir}/opencranium.uml.zargo"/>
+		<copy file="${backup.dir}/opencranium-backup-${versionNumber}.${dayTimeStamp}.zip" tofile="${release.source.zip}"/>
+		<copy file="${optimized.jar.file}" tofile="${release.jar}"/>
+		<zip destfile="${release.doc.zip}">
+			<fileset dir="${doc.dir}" includes="**/*" />
+		</zip>
+	</target>
+	
+</project>

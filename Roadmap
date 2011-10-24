@@ -1,0 +1,50 @@
+CONSIDERATIONS
+======================
+
+Mayor version number (M) means new functionality
+Minor version number (m) means improved existing functionality
+Further version numbers (f) means bug fixing
+Suffixes (s):
+d - means in development
+a - means functionally completed but not tested, could be API changes
+b - means API changes not allowed only bug fixing
+c - means candidate version to release
+
+Possible nomenclatures:
+M.ms.timestamp
+M.m.f
+
+
+ROADMAP
+======================
+
+0.1 Base functionality. No cognitive functions here.
+	
+1.0 Basic attention mechanism implemented. Only attention based on physical context, that is position of the elements in the world.
+	
+2.0 Basic emotional model.
+2.1 Basic model of personality.
+2.2	Attention based on context and emotions.
+2.3	Advanced attention. Multi-focus attention.
+
+3.0 Appraisal theory, expectations.
+3.1 Basic emotional learning based on expectations.
+
+4.0 Internal voice 
+
+5.0 Basic episodic memory.
+5.1 Episodic memory sorted by activation and emotional context intensity.
+
+6.1 Basic imagination. Imagination of missing perceptual information based on past experiences.
+6.2 Expectations improved based on past experiences.
+6.3 Basic reinforcement learning, past experiences affects current decision taking. Based on emotional context of the past.
+	
+7.0 Basic planning.
+7.1 Planning including past experiences.
+
+8.0 Theory of mind: model of me, model of others. Machiavellian intelligence.
+8.1 Advanced planning including uncertainty about others intentions.
+
+9.0 Imitation learning
+
+10.0 Able to replace the humanity.
